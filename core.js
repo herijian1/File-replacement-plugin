@@ -87,7 +87,6 @@ function scanRes() {
   const orig = fs[ORIG_KEY]
   const byAbs = new Map()
   const byRel = new Map()
-  const entries = []
   const sig = []
 
   const walk = (dir, rel) => {
@@ -110,7 +109,6 @@ function scanRes() {
       const relKey = itemRel.startsWith("plugins/") ? itemRel : `plugins/${itemRel}`
       byAbs.set(path.resolve(rootDir, relKey), itemAbs)
       byRel.set(relKey, itemAbs)
-      entries.push(relKey)
       try {
         const st = orig.statSync(itemAbs)
         sig.push(`${relKey}:${st.size}:${st.mtimeMs}`)
@@ -122,7 +120,7 @@ function scanRes() {
 
   state.byAbs = byAbs
   state.byRel = byRel
-  state.entries = entries.sort()
+  state.entries = [...byRel.keys()].sort()
   const signature = sig.sort().join("\n")
   if (signature !== state.signature) {
     state.signature = signature
@@ -200,6 +198,7 @@ const TEMP_HTML = `${path.sep}temp${path.sep}html${path.sep}`
 
 /** 写入渲染模板生成的 HTML 时改写其中的资源引用 */
 function prepareWrite(file, data) {
+  if (typeof file !== "string") return data
   if (typeof data !== "string" || !state.byRel.size) return data
   if (!file.includes(TEMP_HTML) || !data.includes("plugins")) return data
   try {
